@@ -1,0 +1,19 @@
+{
+  "name": "adaptive-card",
+  "version": "0.0.1",
+  "description": "generate validated adaptive card and send it to webhook",
+  "main": "lib/index.js",
+  "bin": {  
+    "adaptive-card": "bin/adaptive-card"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "adaptive",
+    "card",
+    "webhook"
+  ],
+  "author": "sylvainrivierre@gmail.com",
+  "license": "MIT"
+}
