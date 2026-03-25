@@ -23,12 +23,21 @@ should generate a json adapative card and sent it to the send it to the webhook
 - Sources files are in [root]/src folder
 - Compiled files are in [root]/lib folder
 - Tests files are in [root]/test folder
+- Assets files are in [root]/assets folder
 - "adaptive-card" executable is usable in $PATH thanks to "npm link"
 - "adaptive-card" is pipeable to itself for easier chaining
 - "adaptive-card" validate the input (unless empty/null) against "http://adaptivecards.io/schemas/adaptive-card.json"
-- "--webhook" or "-w" is a special parameter that send the input json to the webhook url
+
 - .gitignore must ignore Compiled files
 - npm package should produce an "adaptive-card" executable that is usable when package is installed globally with `npm install -g adaptive-card` later
+
+### Special parameters
+- "--help" or "-h" : display help text about the options of adaptive-card cli and :
+    - Mention "https://adaptivecards.microsoft.com/designer.html" to make adaptative card template easily
+- "--webhook" or "-w" : send the input json to the webhook url
+- "--check-alternative" or "-c" : load/download a file in memory to validate the generated json
+- "--env" or "-e" : enable templating from environment variables prefixed with AC_
+- "--template" or "-t" : accept a json string like '{"text":"ok"}' or a file to template generated json by replacing '{{key}}' by the associated value
 
 ### Sending adaptive card json to webhook
 
@@ -203,3 +212,48 @@ adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --te
 
 ##### Output
 A HTTP Response 202
+
+#### Use an alternative schema validation url (special arguemnt -c / --check-alternative)
+
+##### Input
+```bash
+adaptive-card --version "1.2" | adaptive-card "." --scriptId "azertyuiopqsdfghjklmwxcvbn1234567890azertyuiopqsdfghjklmw" -c "https://www.schemastore.org/clasp.json"
+```
+
+##### Output
+```json
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.2",
+    "scriptId": "azertyuiopqsdfghjklmwxcvbn1234567890azertyuiopqsdfghjklmw"
+}
+```
+
+#### Use an alternative schema validation url (special arguemnt -c / --check-alternative)
+
+##### Input
+```bash
+adaptive-card --version "1.2" | adaptive-card "." --scriptId "a" -c "[root]/assests/clasp.json"
+```
+
+##### Output
+```json
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.2",
+    "scriptId": "azertyuiopqsdfghjklmwxcvbn1234567890azertyuiopqsdfghjklmw"
+}
+```
+#### Schema validation error "." with an alternative schema validation file (special arguemnt -c / --check-alternative)
+
+##### Input
+```bash
+adaptive-card --version "1.2" | adaptive-card "." --scriptId "a" --check-alternative "[root]/assests/clasp.json"
+```
+
+##### Error Output
+```text
+Path ".scriptId" : String is shorter than the minimum length of 57.
+```
