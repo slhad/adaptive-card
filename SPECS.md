@@ -5,7 +5,7 @@
 Executing command
 
 ```bash
-adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --text "*Yup*" --wrap "true" | adaptive-card --webhook "https://myawesomewebhook/someid"
+adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --text "*Yup*" --wrap "true" | adaptive-card -w "https://myawesomewebhook/someid"
 ```
 should generate a json adapative card and sent it to the send it to the webhook
 

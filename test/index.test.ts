@@ -141,7 +141,7 @@ describe('adaptive-card CLI', () => {
       const cmd =
         `${CLI} --version "1.2"` +
         ` | ${CLI} ".body[0]" --type "TextBlock" --text "aaaa" --wrap "true"` +
-        ` | ${CLI} --webhook "http://127.0.0.1:${port}"`;
+        ` | ${CLI} -w "http://127.0.0.1:${port}"`;
 
       const { status } = await runAsync(cmd);
 
@@ -181,11 +181,34 @@ describe('adaptive-card CLI', () => {
       assert.equal(card.scriptId, validId);
       assert.equal(card.version, '1.2');
     });
+
+    it('-c with remote HTTPS schema URL: accepts valid scriptId (network)', async () => {
+      const networkAvailable = await fetch('https://www.schemastore.org/clasp.json').then(() => true).catch(() => false);
+      if (!networkAvailable) return; // skip if no network
+
+      const validId = 'azertyuiopqsdfghjklmwxcvbn1234567890azertyuiopqsdfghjklmw';
+      const cmd = `${CLI} --version "1.2" | ${CLI} "." --scriptId "${validId}" -c "https://www.schemastore.org/clasp.json"`;
+      const { stdout, status } = await runAsync(cmd);
+      assert.equal(status, 0);
+      const card = JSON.parse(stdout);
+      assert.equal(card.scriptId, validId);
+      assert.equal(card.version, '1.2');
+    });
+
+    it('-c with remote HTTPS schema URL: rejects scriptId shorter than 57 chars (network)', async () => {
+      const networkAvailable = await fetch('https://www.schemastore.org/clasp.json').then(() => true).catch(() => false);
+      if (!networkAvailable) return; // skip if no network
+
+      const cmd = `${CLI} --version "1.2" | ${CLI} "." --scriptId "a" -c "https://www.schemastore.org/clasp.json"`;
+      const { stderr, status } = await runAsync(cmd);
+      assert.notEqual(status, 0);
+      assert.match(stderr, /Path "\.scriptId" : String is shorter than the minimum length of 57\./);
+    });
   });
 
   describe('-t flag (template from string)', () => {
     it('replaces {{key}} with values from inline JSON string', () => {
-      const cmd = `${CLI} --somestring "{{sometemplateKey}}" | ${CLI} -t '{"sometemplateKey":"hellow!"}'`;
+      const cmd = `${CLI} --speak "{{sometemplateKey}}" | ${CLI} -t '{"sometemplateKey":"hellow!"}'`;
       const { stdout, status } = run(cmd);
       assert.equal(status, 0);
       const card = JSON.parse(stdout);
@@ -193,7 +216,7 @@ describe('adaptive-card CLI', () => {
         $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
         type: 'AdaptiveCard',
         version: '1.6',
-        somestring: 'hellow!',
+        speak: 'hellow!',
       });
     });
   });
@@ -201,7 +224,7 @@ describe('adaptive-card CLI', () => {
   describe('-t flag (template from file)', () => {
     it('replaces {{key}} with values from a .tmpl file', () => {
       const tmpFile = '/tmp/ac_test_values.tmpl';
-      const cmd = `echo '{"sometemplateKey":"=hola="}' > ${tmpFile} && ${CLI} --astring "{{sometemplateKey}}" | ${CLI} -t ${tmpFile}`;
+      const cmd = `echo '{"sometemplateKey":"=hola="}' > ${tmpFile} && ${CLI} --speak "{{sometemplateKey}}" | ${CLI} -t ${tmpFile}`;
       const { stdout, status } = run(cmd);
       assert.equal(status, 0);
       const card = JSON.parse(stdout);
@@ -209,14 +232,14 @@ describe('adaptive-card CLI', () => {
         $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
         type: 'AdaptiveCard',
         version: '1.6',
-        astring: '=hola=',
+        speak: '=hola=',
       });
     });
   });
 
   describe('-e flag (template from env vars)', () => {
     it('replaces {{key}} with AC_key env var values', () => {
-      const cmd = `${CLI} --somestring "{{theTemplateKey}}" | AC_theTemplateKey=hohohooo ${CLI} -e`;
+      const cmd = `${CLI} --speak "{{theTemplateKey}}" | AC_theTemplateKey=hohohooo ${CLI} -e`;
       const { stdout, status } = run(cmd, undefined);
       assert.equal(status, 0);
       const card = JSON.parse(stdout);
@@ -224,8 +247,26 @@ describe('adaptive-card CLI', () => {
         $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
         type: 'AdaptiveCard',
         version: '1.6',
-        somestring: 'hohohooo',
+        speak: 'hohohooo',
       });
+    });
+  });
+
+  describe('placeholder passthrough (unresolved {{}})', () => {
+    it('unresolved placeholders suppress schema validation', () => {
+      const { stdout, status } = run(`${CLI} --speak "{{someKey}}"`);
+      assert.equal(status, 0);
+      const card = JSON.parse(stdout);
+      assert.equal(card.speak, '{{someKey}}');
+    });
+  });
+
+  describe('post-substitution validation', () => {
+    it('post-substitution validation rejects invalid resolved card', () => {
+      const cmd = `${CLI} --banana "{{someKey}}" | ${CLI} -t '{"someKey": "resolvedValue"}'`;
+      const { stderr, status } = run(cmd);
+      assert.notEqual(status, 0);
+      assert.match(stderr, /Path "\." : Property banana is not allowed\./);
     });
   });
 });

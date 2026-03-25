@@ -19,12 +19,12 @@ Usage: adaptive-card [path] [options]
   path              JSON path to target element (default: '.')
 
 Options:
-  --version         Print version number
+  --version <value>   Set AdaptiveCard version (default: 1.6)
   -w                Send card to a Teams webhook URL
   -c                Validate against a custom JSON Schema (URL or file path)
   -t                Use a JSON object or file as template values
   -e                Use AC_* environment variables as template values
-  -h                Show this help message
+  -h, --help        Show this help message
 
 Design templates at: https://adaptivecards.microsoft.com/designer.html
 `;
@@ -32,7 +32,7 @@ Design templates at: https://adaptivecards.microsoft.com/designer.html
 function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2);
 
-  if (args.includes('-h')) {
+  if (args.includes('-h') || args.includes('--help')) {
     process.stdout.write(HELP_TEXT);
     process.exit(0);
   }
@@ -73,6 +73,11 @@ function parseArgs(argv: string[]): ParsedArgs {
       useEnvTemplate = true;
     } else if (arg.startsWith('--')) {
       const key = arg.slice(2);
+      const nextToken = args[i + 1];
+      if (nextToken === undefined || nextToken.startsWith('-') || nextToken.startsWith('.')) {
+        process.stderr.write(`Error: ${arg} requires a value\n`);
+        process.exit(1);
+      }
       props[key] = parseValue(args[++i]);
     }
     i++;
@@ -125,6 +130,18 @@ async function run(input: string | null, argv: string[]): Promise<void> {
     await sendToWebhook(card, webhookUrl);
   } else if (effectiveTemplateValues !== null) {
     const jsonStr = applyTemplate(JSON.stringify(card, null, 4), effectiveTemplateValues);
+    if (!jsonStr.includes('{{')) {
+      const resolvedCard = JSON.parse(jsonStr) as ReturnType<typeof createDefaultCard>;
+      const errors = customSchemaPath
+        ? await validateCardWithCustomSchema(resolvedCard, path, customSchemaPath)
+        : validateCard(resolvedCard, path);
+      if (errors.length > 0) {
+        for (const err of errors) {
+          process.stderr.write(err + '\n');
+        }
+        process.exit(1);
+      }
+    }
     process.stdout.write(jsonStr + '\n');
   } else {
     process.stdout.write(JSON.stringify(card, null, 4) + '\n');

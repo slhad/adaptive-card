@@ -81,6 +81,6 @@ export function parseValue(value: string): unknown {
 /** Replace {{key}} placeholders in a JSON string with values from the provided map */
 export function applyTemplate(jsonStr: string, values: Record<string, string>): string {
   return jsonStr.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
-    return key in values ? values[key] : `{{${key}}}`;
+    return key in values ? JSON.stringify(values[key]).slice(1, -1) : `{{${key}}}`;
   });
 }
