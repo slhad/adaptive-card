@@ -14,10 +14,12 @@
   "scripts": {
     "prelint": "rm -rf lib",
     "lint": "eslint src test",
+    "compile": "tsc && cp assets/adaptive-card-schema.json lib/src/ && mkdir -p lib/bin && sed 's|../lib/src/cli.js|../src/cli.js|' bin/adaptive-card > lib/bin/adaptive-card && chmod +x lib/bin/adaptive-card",
     "prebuild": "npm run lint",
-    "build": "tsc && cp assets/adaptive-card-schema.json lib/src/ && mkdir -p lib/bin && sed 's|../lib/src/cli.js|../src/cli.js|' bin/adaptive-card > lib/bin/adaptive-card && chmod +x lib/bin/adaptive-card",
+    "build": "npm run compile",
     "pretest": "npm run build",
     "test": "node --test 'lib/test/**/*.test.js'",
+    "prepare": "npm run compile",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
