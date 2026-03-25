@@ -1,6 +1,5 @@
 {
     "json.schemaDownload.trustedDomains": {
         "http://adaptivecards.io/schemas/adaptive-card.json": true
-    },
-    "debug.javascript.autoAttachFilter": "disabled"
+    }
 }

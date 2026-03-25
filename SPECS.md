@@ -31,13 +31,13 @@ should generate a json adapative card and sent it to the send it to the webhook
 - .gitignore must ignore Compiled files
 - npm package should produce an "adaptive-card" executable that is usable when package is installed globally with `npm install -g adaptive-card` later
 
-### Special parameters
-- "--help" or "-h" : display help text about the options of adaptive-card cli and :
+### Special parameters (short hands)
+- "-h" : display help text about the options of adaptive-card cli and :
     - Mention "https://adaptivecards.microsoft.com/designer.html" to make adaptative card template easily
-- "--webhook" or "-w" : send the input json to the webhook url
-- "--check-alternative" or "-c" : load/download a file in memory to validate the generated json
-- "--env" or "-e" : enable templating from environment variables prefixed with AC_
-- "--template" or "-t" : accept a json string like '{"text":"ok"}' or a file to template generated json by replacing '{{key}}' by the associated value
+- "-w" : send the input json to the webhook url
+- "-c" : load/download a file in memory to validate the generated json
+- "-e" : enable templating from environment variables prefixed with AC_
+- "-t" : accept a json string like '{"text":"ok"}' or a file to template generated json by replacing '{{key}}' by the associated value
 
 ### Sending adaptive card json to webhook
 
@@ -199,7 +199,7 @@ adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --te
 Path ".body[1]" : Missing property "items".
 ```
 
-#### Send to webhook (special argument -w / --webhook)
+#### Send to webhook (special argument -w)
 
 ##### Preparation
 
@@ -207,13 +207,13 @@ Path ".body[1]" : Missing property "items".
 
 ##### Input
 ```bash
-adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --text "aaaa" --wrap "true" | adaptive-card --webhook "https://localhost:${RPORT}
+adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --text "aaaa" --wrap "true" | adaptive-card -w "https://localhost:${RPORT}
 ```
 
 ##### Output
 A HTTP Response 202
 
-#### Use an alternative schema validation url (special arguemnt -c / --check-alternative)
+#### Use an alternative schema validation url (special arguemnt -c)
 
 ##### Input
 ```bash
@@ -230,11 +230,11 @@ adaptive-card --version "1.2" | adaptive-card "." --scriptId "azertyuiopqsdfghjk
 }
 ```
 
-#### Use an alternative schema validation url (special arguemnt -c / --check-alternative)
+#### Use an alternative schema validation url (special arguemnt -c)
 
 ##### Input
 ```bash
-adaptive-card --version "1.2" | adaptive-card "." --scriptId "a" -c "[root]/assests/clasp.json"
+adaptive-card --version "1.2" | adaptive-card "." --scriptId "a" -c "[root]/assets/clasp.json"
 ```
 
 ##### Output
@@ -246,14 +246,66 @@ adaptive-card --version "1.2" | adaptive-card "." --scriptId "a" -c "[root]/asse
     "scriptId": "azertyuiopqsdfghjklmwxcvbn1234567890azertyuiopqsdfghjklmw"
 }
 ```
-#### Schema validation error "." with an alternative schema validation file (special arguemnt -c / --check-alternative)
+#### Schema validation error "." with an alternative schema validation file (special arguemnt -c)
 
 ##### Input
 ```bash
-adaptive-card --version "1.2" | adaptive-card "." --scriptId "a" --check-alternative "[root]/assests/clasp.json"
+adaptive-card --version "1.2" | adaptive-card "." --scriptId "a" -c "[root]/assets/clasp.json"
 ```
 
 ##### Error Output
 ```text
 Path ".scriptId" : String is shorter than the minimum length of 57.
+```
+
+#### Template a value from string (special argument -t)
+
+##### Input
+```bash
+adaptive-card --somestring "{{sometemplateKey}}" | adaptive-card -t '{"sometemplateKey":"hellow!"}'
+```
+
+##### Output
+```json
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.6",
+    "somestring": "hellow!"
+}
+```
+
+#### Template a value from file (special argument -t)
+
+##### Input
+```bash
+echo '{"sometemplateKey":"=hola="}' > ./values.tmpl
+adaptive-card --astring "{{sometemplateKey}}" | adaptive-card -t ./values.tmpl
+```
+
+##### Output
+```json
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.6",
+    "astring": "=hola="
+}
+```
+
+#### Template a value from environment (special argument -e)
+
+##### Input
+```bash
+adaptive-card --somestring "{{theTemplateKey}}" | AC_theTemplateKey=hohohooo adaptive-card -e
+```
+
+##### Output
+```json
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.6",
+    "somestring": "hohohooo"
+}
 ```
