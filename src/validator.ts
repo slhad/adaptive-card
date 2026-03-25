@@ -1,6 +1,7 @@
 import { Ajv, type ErrorObject } from 'ajv';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { parsePath, getAtPath } from './card.js';
 
 const _require = createRequire(import.meta.url);
@@ -57,16 +58,44 @@ function cliPathToJsonPointer(cliPath: string): string {
   );
 }
 
+function jsonPointerToCliPath(jsonPointer: string, baseCliPath: string): string {
+  if (jsonPointer === '') return baseCliPath;
+  const sub = jsonPointer
+    .replace(/^\//, '')
+    .replace(/\/(\d+)/g, '[$1]')
+    .replace(/\//g, '.');
+  if (baseCliPath === '.') return '.' + sub;
+  return baseCliPath + '.' + sub;
+}
+
 function formatError(error: ErrorObject, cliPath: string): string | null {
+  const displayPath = jsonPointerToCliPath(error.instancePath, cliPath);
   if (error.keyword === 'additionalProperties') {
     const prop = (error.params as { additionalProperty: string }).additionalProperty;
-    return `Path "${cliPath}" : Property ${prop} is not allowed.`;
+    return `Path "${displayPath}" : Property ${prop} is not allowed.`;
   }
   if (error.keyword === 'required') {
     const prop = (error.params as { missingProperty: string }).missingProperty;
-    return `Path "${cliPath}" : Missing property "${prop}".`;
+    return `Path "${displayPath}" : Missing property "${prop}".`;
+  }
+  if (error.keyword === 'minLength') {
+    const limit = (error.params as { limit: number }).limit;
+    return `Path "${displayPath}" : String is shorter than the minimum length of ${limit}.`;
   }
   return null;
+}
+
+function stripExternalRefs(val: unknown): void {
+  if (Array.isArray(val)) {
+    for (const item of val) stripExternalRefs(item);
+  } else if (val !== null && typeof val === 'object') {
+    const obj = val as Record<string, unknown>;
+    if (typeof obj['$ref'] === 'string' && (obj['$ref'] as string).startsWith('http')) {
+      for (const k of Object.keys(obj)) delete obj[k];
+      return;
+    }
+    for (const v of Object.values(obj)) stripExternalRefs(v);
+  }
 }
 
 /**
@@ -121,4 +150,39 @@ export function validateCard(card: unknown, cliPath: string): string[] {
     .filter((e): e is string => e !== null);
 
   return rootErrors;
+}
+
+/**
+ * Validate a card (or sub-node) against a custom JSON Schema loaded from a URL or local file.
+ * Returns an array of formatted error messages (empty = valid).
+ */
+export async function validateCardWithCustomSchema(
+  card: unknown,
+  cliPath: string,
+  schemaUrlOrPath: string,
+): Promise<string[]> {
+  let schemaJson: string;
+  if (schemaUrlOrPath.startsWith('http://') || schemaUrlOrPath.startsWith('https://')) {
+    const response = await fetch(schemaUrlOrPath);
+    schemaJson = await response.text();
+  } else {
+    const absolutePath = resolve(process.cwd(), schemaUrlOrPath);
+    schemaJson = readFileSync(absolutePath, 'utf8');
+  }
+
+  const rawSchema = JSON.parse(schemaJson);
+  const schema = normalizeDraft06(rawSchema, true);
+  stripExternalRefs(schema);
+
+  const ajv = new Ajv({ strict: false, allErrors: true });
+  addFormats(ajv);
+  const validate = ajv.compile(schema as object);
+
+  const target = cliPath === '.' ? card : getAtPath(card, parsePath(cliPath));
+  const valid = validate(target);
+  if (valid) return [];
+
+  return (validate.errors ?? [])
+    .map((e) => formatError(e, cliPath))
+    .filter((e): e is string => e !== null);
 }

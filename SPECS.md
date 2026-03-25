@@ -19,7 +19,8 @@ should generate a json adapative card and sent it to the send it to the webhook
 - NodeJS 22+
 - ESM (ES Modules) are mandatory (`"type": "module"` in package.json, `"module": "NodeNext"` in tsconfig)
 - tests are running with "node --test"
-- Typescript 6.0 is used
+- Typescript >= 6.0 is used
+- ESLint is used before build script
 - Sources files are in [root]/src folder
 - Compiled files are in [root]/lib folder
 - Tests files are in [root]/test folder
