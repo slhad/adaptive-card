@@ -9,6 +9,7 @@
     "adaptive-card": "bin/adaptive-card"
   },
   "scripts": {
+    "prelint": "rm -rf lib",
     "lint": "eslint src test",
     "prebuild": "npm run lint",
     "build": "tsc && cp assets/adaptive-card-schema.json lib/src/",

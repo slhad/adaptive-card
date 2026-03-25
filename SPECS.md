@@ -28,11 +28,12 @@ should generate a json adapative card and sent it to the send it to the webhook
 - "adaptive-card" executable is usable in $PATH thanks to "npm link"
 - "adaptive-card" is pipeable to itself for easier chaining
 - "adaptive-card" validate the input (unless empty/null) against "http://adaptivecards.io/schemas/adaptive-card.json"
-
 - .gitignore must ignore Compiled files
+- Shorthand parameters are special parameters for custom processes
+- Named parameters are for passing key and value
 - npm package should produce an "adaptive-card" executable that is usable when package is installed globally with `npm install -g adaptive-card` later
 
-### Special parameters (short hands)
+### Special parameters (shorthands)
 - "-h" : display help text about the options of adaptive-card cli and :
     - Mention "https://adaptivecards.microsoft.com/designer.html" to make adaptative card template easily
 - "-w" : send the input json to the webhook url

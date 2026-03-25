@@ -19,12 +19,13 @@ Usage: adaptive-card [path] [options]
   path              JSON path to target element (default: '.')
 
 Options:
-  --version <value>   Set AdaptiveCard version (default: 1.6)
-  -w                Send card to a Teams webhook URL
+  --key <value>     Set a property at the specified path (can be used multiple times)
+  --version <value> Set AdaptiveCard version (default: 1.6)
+  -w                Send card to a Webhook URL (like MS Teams)
   -c                Validate against a custom JSON Schema (URL or file path)
   -t                Use a JSON object or file as template values
   -e                Use AC_* environment variables as template values
-  -h, --help        Show this help message
+  -h                Show this help message
 
 Design templates at: https://adaptivecards.microsoft.com/designer.html
 `;
@@ -32,7 +33,7 @@ Design templates at: https://adaptivecards.microsoft.com/designer.html
 function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2);
 
-  if (args.includes('-h') || args.includes('--help')) {
+  if (args.includes('-h')) {
     process.stdout.write(HELP_TEXT);
     process.exit(0);
   }

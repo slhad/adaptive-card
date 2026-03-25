@@ -1,5 +1,6 @@
 {
     "json.schemaDownload.trustedDomains": {
         "http://adaptivecards.io/schemas/adaptive-card.json": true
-    }
+    },
+    "js/ts.tsdk.path": "node_modules/typescript/lib"
 }
