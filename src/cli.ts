@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createDefaultCard, applyProps, parseValue, applyTemplate } from './card.js';
 import { validateCard, validateCardWithCustomSchema } from './validator.js';
@@ -11,6 +11,7 @@ interface ParsedArgs {
   customSchemaPath: string | null;
   templateValues: Record<string, string> | null;
   useEnvTemplate: boolean;
+  outputPath: string | null;
 }
 
 const HELP_TEXT = `\
@@ -44,6 +45,7 @@ function parseArgs(argv: string[]): ParsedArgs {
   let customSchemaPath: string | null = null;
   let templateValues: Record<string, string> | null = null;
   let useEnvTemplate = false;
+  let outputPath: string | null = null;
 
   let i = 0;
 
@@ -57,6 +59,8 @@ function parseArgs(argv: string[]): ParsedArgs {
     const arg = args[i];
     if (arg === '-w') {
       webhookUrl = args[++i];
+    } else if (arg === '-o') {
+      outputPath = args[++i];
     } else if (arg === '-c') {
       customSchemaPath = args[++i];
     } else if (arg === '-t') {
@@ -84,11 +88,12 @@ function parseArgs(argv: string[]): ParsedArgs {
     i++;
   }
 
-  return { path, props, webhookUrl, customSchemaPath, templateValues, useEnvTemplate };
+  return { path, props, webhookUrl, customSchemaPath, templateValues, useEnvTemplate, outputPath };
 }
 
 async function run(input: string | null, argv: string[]): Promise<void> {
-  const { path, props, webhookUrl, customSchemaPath, templateValues, useEnvTemplate } = parseArgs(argv);
+  const { path, props, webhookUrl, customSchemaPath, templateValues, useEnvTemplate, outputPath } =
+    parseArgs(argv);
 
   // Validate piped input (if any) before processing
   let card = input
@@ -129,6 +134,16 @@ async function run(input: string | null, argv: string[]): Promise<void> {
 
   if (webhookUrl) {
     await sendToWebhook(card, webhookUrl);
+
+    // Optionally write the generated card to a file or stdout when -o is provided
+    if (outputPath) {
+      const json = JSON.stringify(card, null, 4);
+      if (outputPath === '-') {
+        process.stdout.write(json + '\n');
+      } else {
+        writeFileSync(resolve(outputPath), json, 'utf8');
+      }
+    }
   } else if (effectiveTemplateValues !== null) {
     const jsonStr = applyTemplate(JSON.stringify(card, null, 4), effectiveTemplateValues);
     if (!jsonStr.includes('{{')) {
@@ -143,9 +158,26 @@ async function run(input: string | null, argv: string[]): Promise<void> {
         process.exit(1);
       }
     }
-    process.stdout.write(jsonStr + '\n');
+    if (outputPath) {
+      if (outputPath === '-') {
+        process.stdout.write(jsonStr + '\n');
+      } else {
+        writeFileSync(resolve(outputPath), jsonStr, 'utf8');
+      }
+    } else {
+      process.stdout.write(jsonStr + '\n');
+    }
   } else {
-    process.stdout.write(JSON.stringify(card, null, 4) + '\n');
+    const json = JSON.stringify(card, null, 4);
+    if (outputPath) {
+      if (outputPath === '-') {
+        process.stdout.write(json + '\n');
+      } else {
+        writeFileSync(resolve(outputPath), json, 'utf8');
+      }
+    } else {
+      process.stdout.write(json + '\n');
+    }
   }
 }
 

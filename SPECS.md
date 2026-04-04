@@ -37,9 +37,10 @@ should generate a json adapative card and sent it to the send it to the webhook
 - "-h" : display help text about the options of adaptive-card cli and :
     - Mention "https://adaptivecards.microsoft.com/designer.html" to make adaptative card template easily
 - "-w" : send the input json to the webhook url
+- "-o" : output generate json to file or force to stdout (with -w)
 - "-c" : load/download a file in memory to validate the generated json
 - "-e" : enable templating from environment variables prefixed with AC_
-- "-t" : accept a json string like '{"text":"ok"}' or a file to template generated json by replacing '{{key}}' by the associated value
+- "-t" : accept a json string like '{"text":"ok"}' or a file to template generated json by replacing '{{key}}' by the associated value (mandatory example in -h)
 
 ### Sending adaptive card json to webhook
 
@@ -214,6 +215,37 @@ adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --te
 
 ##### Output
 A HTTP Response 202
+
+#### Output to file or stdout (special argument -o)
+
+##### Input
+```bash
+adaptive-card --version "1.2" -o ./card.json
+```
+
+##### Output
+File `./card.json` contains:
+```json
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.2"
+}
+```
+
+##### Force stdout while sending to webhook  (special argument -w and -o)
+
+##### Preparation
+
+- $RPORT : temporary program that listen on a free random port > 1024
+
+##### Input
+```bash
+adaptive-card --version "1.2" | adaptive-card -w "https://localhost:${RPORT}" -o -
+```
+
+##### Output
+A HTTP Response 202 and the generated adaptive card JSON is also printed to stdout.
 
 #### Use an alternative schema validation url (special arguemnt -c)
 

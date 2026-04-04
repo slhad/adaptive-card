@@ -5,6 +5,8 @@ import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFileSync, unlinkSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 const CLI = 'node bin/adaptive-card';
 const CWD = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -153,6 +155,72 @@ describe('adaptive-card CLI', () => {
       assert.equal(payload.type, 'message');
       assert.equal(payload.attachments[0].contentType, 'application/vnd.microsoft.card.adaptive');
       assert.equal(payload.attachments[0].content.type, 'AdaptiveCard');
+    });
+  });
+
+  describe('-o flag (output to file / stdout)', () => {
+    it('writes generated JSON to a file when -o <path> is provided', () => {
+      const tmpFile = resolve(tmpdir(), `ac_test_out_${process.pid}.json`);
+      try {
+        if (existsSync(tmpFile)) unlinkSync(tmpFile);
+      } catch (e) {
+        void e;
+      }
+
+      const { stdout, status } = run(`${CLI} --version "1.2" -o "${tmpFile}"`);
+      assert.equal(status, 0);
+      // CLI should not write to stdout when -o <file> is used
+      assert.equal(stdout, '');
+
+      const fileContent = readFileSync(tmpFile, 'utf8');
+      const card = JSON.parse(fileContent);
+      assert.deepEqual(card, {
+        $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+        type: 'AdaptiveCard',
+        version: '1.2',
+      });
+
+      try {
+        unlinkSync(tmpFile);
+      } catch (e) {
+        void e;
+      }
+    });
+
+    it('sends to webhook and prints JSON to stdout when -w and -o - are combined', async () => {
+      let received = '';
+      const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+        let body = '';
+        req.on('data', (chunk: Buffer) => { body += chunk; });
+        req.on('end', () => {
+          received = body;
+          res.writeHead(202, { 'Connection': 'close' });
+          res.end();
+        });
+      });
+
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+
+      const cmd =
+        `${CLI} --version "1.2"` +
+        ` | ${CLI} -w "http://127.0.0.1:${port}" -o -`;
+
+      const { stdout, status } = await runAsync(cmd);
+
+      (server as unknown as { closeAllConnections(): void }).closeAllConnections?.();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+
+      assert.equal(status, 0);
+      const payload = JSON.parse(received);
+      assert.equal(payload.type, 'message');
+      assert.equal(payload.attachments[0].contentType, 'application/vnd.microsoft.card.adaptive');
+      assert.equal(payload.attachments[0].content.type, 'AdaptiveCard');
+
+      // stdout should contain the generated adaptive card JSON
+      const printed = JSON.parse(stdout);
+      assert.equal(printed.type, 'AdaptiveCard');
+      assert.equal(printed.version, '1.2');
     });
   });
 
