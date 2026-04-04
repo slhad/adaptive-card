@@ -1,8 +1,10 @@
 {
   "name": "adaptive-card",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "generate validated adaptive card and send it to webhook",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "main": "lib/src/index.js",
   "files": [
