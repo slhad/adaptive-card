@@ -22,13 +22,36 @@ Usage: adaptive-card [path] [options]
 Options:
   --key <value>     Set a property at the specified path (can be used multiple times)
   --version <value> Set AdaptiveCard version (default: 1.6)
-  -w                Send card to a Webhook URL (like MS Teams)
-  -c                Validate against a custom JSON Schema (URL or file path)
-  -t                Use a JSON object or file as template values
+  -w <url>          Send card to a Webhook URL (like MS Teams). Sends a JSON envelope
+                    with Content-Type: application/json and the following shape:
+                      {
+                        "type": "message",
+                        "attachments": [{
+                          "contentType": "application/vnd.microsoft.card.adaptive",
+                          "content": <adaptive card JSON>
+                        }]
+                      }
+  -o <path|->       Write generated JSON to a file, or use '-' to force stdout (works with -w)
+  -c <schema>       Validate against a custom JSON Schema (URL or file path)
+  -t <json|file>    Use a JSON object or file as template values
+                     Use a JSON object or a file to provide template values that will
+                     replace placeholders in the generated card. Placeholders use the
+                     {{key}} syntax (for example: "{{Title}}").
+                     Examples:
+                       -t '{"Title":"Hello","Body":"World"}'
+                       -t ./values.json
+                     Template values can be applied to simple value fields or to an
+                     adaptive card JSON that contains placeholders; unresolved
+                     placeholders will bypass schema validation until resolved.
   -e                Use AC_* environment variables as template values
   -h                Show this help message
 
-Design templates at: https://adaptivecards.microsoft.com/designer.html
+Design templates: https://adaptivecards.microsoft.com/designer.html
+
+Examples:
+  adaptive-card --version "1.2"
+  adaptive-card --version "1.2" | adaptive-card ".body[0]" --type "TextBlock" --text "Hello" --wrap "true"
+  adaptive-card --version "1.2" | adaptive-card -w "https://example.com/webhook" -o -
 `;
 
 function parseArgs(argv: string[]): ParsedArgs {

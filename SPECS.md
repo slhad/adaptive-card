@@ -1,4 +1,4 @@
-# adaptative-card specs
+# adaptive-card specs
 
 ## Goal
 
@@ -35,12 +35,15 @@ should generate a json adapative card and sent it to the send it to the webhook
 
 ### Special parameters (shorthands)
 - "-h" : display help text about the options of adaptive-card cli and :
-    - Mention "https://adaptivecards.microsoft.com/designer.html" to make adaptative card template easily
+    - Mention "https://adaptivecards.microsoft.com/designer.html" to make adaptive card template easily
 - "-w" : send the input json to the webhook url
 - "-o" : output generate json to file or force to stdout (with -w)
 - "-c" : load/download a file in memory to validate the generated json
 - "-e" : enable templating from environment variables prefixed with AC_
-- "-t" : accept a json string like '{"text":"ok"}' or a file to template generated json by replacing '{{key}}' by the associated value (mandatory example in -h)
+- "-t" : accept a json string like '{"text":"ok"}' or a file to template generated json by replacing '{{key}}' by the associated value and mandatory example in -h :
+    - values in json to template adaptive card
+    - adaptive card json with values to replace
+    - values format to template '{{key}}'
 
 ### Sending adaptive card json to webhook
 
